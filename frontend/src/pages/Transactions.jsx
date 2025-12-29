@@ -1,18 +1,88 @@
 import React, { useState } from 'react';
+import { useEffect } from 'react';
 import { Row, Col, Card, Table, Button, Badge, Form, InputGroup } from 'react-bootstrap';
 import { FaPlus, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
+import TransactionModal from '../components/modals/TransactionModal';
+import DeleteConfirmModal from '../components/modals/DeleteConfirmModal';
+import { categoryService } from '../services/api';
+
 
 function Transactions() {
   // TODO: Reemplazar con datos reales del backend
-  const [transactions] = useState([
-    { id: 1, date: '2024-12-27', description: 'Supermercado', category: 'Alimentación', amount: -1250, type: 'expense' },
-    { id: 2, date: '2024-12-26', description: 'Salario', category: 'Ingreso', amount: 5000, type: 'income' },
-    { id: 3, date: '2024-12-25', description: 'Netflix', category: 'Entretenimiento', amount: -450, type: 'expense' },
-    { id: 4, date: '2024-12-24', description: 'Uber', category: 'Transporte', amount: -320, type: 'expense' },
-    { id: 5, date: '2024-12-23', description: 'Farmacia', category: 'Salud', amount: -890, type: 'expense' }
+  const [transactions, setTransactions] = useState([
+    { id: 1, date: '2024-12-27', description: 'Supermercado', category: 'Alimentación', category_id: 1, amount: 1250, type: 'expense' },
+    { id: 2, date: '2024-12-26', description: 'Salario', category: 'Ingreso', category_id: 9, amount: 5000, type: 'income' },
+    { id: 3, date: '2024-12-25', description: 'Netflix', category: 'Entretenimiento', category_id: 3, amount: 450, type: 'expense' },
+    { id: 4, date: '2024-12-24', description: 'Uber', category: 'Transporte', category_id: 2, amount: 320, type: 'expense' },
+    { id: 5, date: '2024-12-23', description: 'Farmacia', category: 'Salud', category_id: 4, amount: 890, type: 'expense' }
   ]);
 
+  const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  
+  // Obtener categorías del backend
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const result = await categoryService.getAll();
+        setCategories(result.data);
+      } catch (error) {
+        console.error('Error al obtener categorías:', error);
+      }
+    };
+    fetchCategories();
+  }, []);
+  const [showModal, setShowModal] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [selectedTransaction, setSelectedTransaction] = useState(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
+
+  const handleAddTransaction = () => {
+    setSelectedTransaction(null);
+    setShowModal(true);
+  };
+
+  const handleEditTransaction = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowModal(true);
+  };
+
+  const handleSaveTransaction = async (formData) => {
+    // TODO: Guardar en backend
+    console.log('Guardando transacción:', formData);
+    
+    if (selectedTransaction) {
+      // Editar
+      setTransactions(prev => prev.map(t => 
+        t.id === selectedTransaction.id ? { ...t, ...formData } : t
+      ));
+    } else {
+      // Crear nueva
+      const newTransaction = {
+        id: Date.now(),
+        ...formData
+      };
+      setTransactions(prev => [newTransaction, ...prev]);
+    }
+  };
+
+  const handleDeleteClick = (transaction) => {
+    setSelectedTransaction(transaction);
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = async () => {
+    setDeleteLoading(true);
+    // TODO: Eliminar en backend
+    console.log('Eliminando transacción:', selectedTransaction.id);
+    
+    setTimeout(() => {
+      setTransactions(prev => prev.filter(t => t.id !== selectedTransaction.id));
+      setDeleteLoading(false);
+      setShowDeleteModal(false);
+      setSelectedTransaction(null);
+    }, 500);
+  };
 
   const getCategoryBadge = (category) => {
     const colors = {
@@ -32,9 +102,9 @@ function Transactions() {
           <h1 className="page-title">Transacciones</h1>
           <p className="page-subtitle">Gestiona todos tus gastos e ingresos</p>
         </div>
-        <Button className="btn-add">
+        <Button className="btn-add" id="add-transaction-btn" onClick={handleAddTransaction}>
           <FaPlus className="me-2" />
-          Agregar Gasto
+          Agregar Transacción
         </Button>
       </div>
 
@@ -97,13 +167,21 @@ function Transactions() {
                     </Badge>
                   </td>
                   <td className={transaction.type === 'income' ? 'amount-income' : 'amount-expense'}>
-                    {transaction.amount > 0 ? '+' : ''}${Math.abs(transaction.amount).toLocaleString()}
+                    {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
                   </td>
                   <td>
-                    <Button variant="link" className="action-btn">
+                    <Button 
+                      variant="link" 
+                      className="action-btn"
+                      onClick={() => handleEditTransaction(transaction)}
+                    >
                       <FaEdit />
                     </Button>
-                    <Button variant="link" className="action-btn text-danger">
+                    <Button 
+                      variant="link" 
+                      className="action-btn text-danger"
+                      onClick={() => handleDeleteClick(transaction)}
+                    >
                       <FaTrash />
                     </Button>
                   </td>
@@ -113,6 +191,24 @@ function Transactions() {
           </Table>
         </Card.Body>
       </Card>
+
+      {/* Modales */}
+      <TransactionModal
+        show={showModal}
+        onHide={() => setShowModal(false)}
+        onSave={handleSaveTransaction}
+        transaction={selectedTransaction}
+        categories={categories}
+      />
+
+      <DeleteConfirmModal
+        show={showDeleteModal}
+        onHide={() => setShowDeleteModal(false)}
+        onConfirm={handleConfirmDelete}
+        title="Eliminar Transacción"
+        message={`¿Estás seguro de que deseas eliminar la transacción "${selectedTransaction?.description}"?`}
+        loading={deleteLoading}
+      />
     </div>
   );
 }

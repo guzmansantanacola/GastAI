@@ -1,19 +1,33 @@
 import React, { useState } from 'react';
-import { Container, Form, Button } from 'react-bootstrap';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaArrowLeft } from 'react-icons/fa';
+import { authService } from '../services/api';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Integrar con backend
-    console.log('Login:', { email, password });
-    // Simular login exitoso y navegar al dashboard
-    navigate('/dashboard');
+    setLoading(true);
+    setError('');
+
+    try {
+      await authService.login({ email, password });
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Error al iniciar sesión:', err);
+      setError(
+        err.response?.data?.message || 
+        'Error al iniciar sesión. Verifica tus credenciales.'
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -28,6 +42,12 @@ function Login() {
             <h1 className="login-title">GastAi</h1>
             <p className="login-subtitle">Inicia sesión para continuar</p>
           </div>
+
+          {error && (
+            <Alert variant="danger" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formEmail">
@@ -66,14 +86,16 @@ function Login() {
                 label="Recordarme"
                 className="remember-check"
               />
-              <Link to="/recuperar" className="forgot-link">
+              <Link to="/recuperar-contrasena">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
-
-            <Button type="submit" className="w-100 btn-login mb-3">
-              Iniciar Sesión
+            <div className='text-center'>
+              <Button type="submit " disabled={loading}>
+              {loading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
             </Button>
+            </div>
+            
           </Form>
 
           <div className="text-center mt-4">

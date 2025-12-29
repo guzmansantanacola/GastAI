@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Container, Form, Button } from 'react-bootstrap';
-import { Link } from 'react-router-dom';
+import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUser, FaArrowLeft } from 'react-icons/fa';
+import { authService } from '../services/api';
 
 function Register() {
   const [formData, setFormData] = useState({
@@ -10,6 +11,9 @@ function Register() {
     password: '',
     confirmPassword: ''
   });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const navigate = useNavigate();
 
   const handleChange = (e) => {
     setFormData({
@@ -18,10 +22,37 @@ function Register() {
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // TODO: Integrar con backend
-    console.log('Registro:', formData);
+    setLoading(true);
+    setError('');
+
+    // Validar que las contraseñas coincidan
+    if (formData.password !== formData.confirmPassword) {
+      setError('Las contraseñas no coinciden');
+      setLoading(false);
+      return;
+    }
+
+    // Validar longitud mínima de contraseña
+    if (formData.password.length < 8) {
+      setError('La contraseña debe tener al menos 8 caracteres');
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await authService.register(formData);
+      navigate('/dashboard');
+    } catch (err) {
+      console.error('Error al registrar:', err);
+      const errorMsg = err.response?.data?.message || 
+                       err.response?.data?.errors?.email?.[0] ||
+                       'Error al crear la cuenta. Intenta nuevamente.';
+      setError(errorMsg);
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -36,6 +67,12 @@ function Register() {
             <h1 className="login-title">GastAi</h1>
             <p className="login-subtitle">Crea tu cuenta para comenzar</p>
           </div>
+
+          {error && (
+            <Alert variant="danger" onClose={() => setError('')} dismissible>
+              {error}
+            </Alert>
+          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formName">
@@ -102,8 +139,8 @@ function Register() {
               />
             </Form.Group>
 
-            <Button type="submit" className="w-100 btn-login mb-3">
-              Crear Cuenta
+            <Button type="submit" className="w-100 btn-login mb-3" disabled={loading}>
+              {loading ? 'Creando cuenta...' : 'Crear Cuenta'}
             </Button>
           </Form>
 
