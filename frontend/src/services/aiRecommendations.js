@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
 
 export async function getAIRecommendations(userStats = []) {
   // Limitar a las 10 transacciones más recientes
@@ -10,7 +10,7 @@ export async function getAIRecommendations(userStats = []) {
   { "id": 1, "type": "warning", "title": "...", "description": "...", "impact": "alto", "savings": 800 },
   ...
 ]
-Usa los siguientes datos del usuario (últimas 10 transacciones): ${JSON.stringify(recentTx)}
+SOLO puedes usar los datos de las transacciones que te paso, no inventes montos ni categorías. Si no hay suficiente información, responde con recomendaciones genéricas pero nunca inventes datos. Datos del usuario: ${JSON.stringify(recentTx)}
 `;
 
   const response = await axios.post(
@@ -22,7 +22,7 @@ Usa los siguientes datos del usuario (últimas 10 transacciones): ${JSON.stringi
         { role: 'user', content: prompt }
       ],
       max_tokens: 600,
-      temperature: 0.7
+      temperature: 0.2
     },
     {
       headers: {

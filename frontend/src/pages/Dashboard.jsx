@@ -170,7 +170,7 @@ function Dashboard() {
 
       {/* Chart */}
       <Row>
-        <Col lg={8} className="mb-4">
+        <Col lg={12} className="mb-4">
           <Card className="chart-card">
             <Card.Body>
               <h5 className="card-title">Gastos de la Semana</h5>
@@ -181,22 +181,6 @@ function Dashboard() {
           </Card>
         </Col>
 
-        <Col lg={4} className="mb-4">
-          <Card className="alerts-card">
-            <Card.Body>
-              <h5 className="card-title">Alertas IA</h5>
-              <div className="alert-item">
-                <p className="alert-text">🤖 Detectamos un gasto inusual en "Entretenimiento"</p>
-              </div>
-              <div className="alert-item">
-                <p className="alert-text">💡 Podrías ahorrar $200 este mes reduciendo salidas</p>
-              </div>
-              <div className="alert-item">
-                <p className="alert-text">📊 Estás 15% por debajo de tu promedio mensual</p>
-              </div>
-            </Card.Body>
-          </Card>
-        </Col>
       </Row>
     </div>
   );

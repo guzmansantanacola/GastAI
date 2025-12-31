@@ -36,7 +36,7 @@ export async function getAIRecommendations(userStats = []) {
         { role: 'user', content: prompt }
       ],
       max_tokens: 600,
-      temperature: 0.2
+      temperature: 0.5
     },
     {
       headers: {

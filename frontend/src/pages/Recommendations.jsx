@@ -32,13 +32,6 @@ function Recommendations() {
     fetchAIRecommendations();
   }, []);
 
-  const patterns = [
-    { category: 'Alimentación', trend: 'estable', change: '+2%' },
-    { category: 'Transporte', trend: 'aumentando', change: '+15%' },
-    { category: 'Entretenimiento', trend: 'disminuyendo', change: '-8%' },
-    { category: 'Salud', trend: 'estable', change: '+1%' }
-  ];
-
   const getImpactBadge = (impact) => {
     const colors = {
       'alto': 'danger',
@@ -48,14 +41,6 @@ function Recommendations() {
     return colors[impact] || 'secondary';
   };
 
-  const getTrendColor = (trend) => {
-    const colors = {
-      'estable': 'success',
-      'aumentando': 'danger',
-      'disminuyendo': 'info'
-    };
-    return colors[trend] || 'secondary';
-  };
 
   const iconMap = {
     warning: <FaExclamationTriangle />,
