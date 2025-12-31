@@ -1,29 +1,52 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Form, Button } from 'react-bootstrap';
 import { FaUser, FaEnvelope, FaLock, FaSave } from 'react-icons/fa';
+import { profileService} from '../services/api';
+import { showSuccessAlert } from '../components/common/successAlert';
 
 function Profile() {
-  const [formData, setFormData] = useState({
-    name: 'Juan Pérez',
-    email: 'juan@example.com',
-    currentPassword: '',
+  const [profile, setProfile] = useState({
+    name: '',
+    email: '',
     newPassword: '',
     confirmPassword: ''
   });
-
+  const [loading, setLoading] = useState(true);
   const handleChange = (e) => {
-    setFormData({
-      ...formData,
+    setProfile({
+      ...profile,
       [e.target.name]: e.target.value
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    // TODO: Implementar actualización de perfil
-    console.log('Actualizar perfil:', formData);
-  };
+   useEffect(() => {
+    const fetchTransactions = async () => {
+      try {
+        setLoading(true);
+        const response = await profileService.getProfile();
+        // El nuevo endpoint devuelve { success: true, data: { id, name, email } }
+        setProfile(response.data);
+      } catch (error) {
+        console.error('Error al cargar perfil:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
+    fetchTransactions();
+  }, []); // [] = solo al montar
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      await profileService.updateProfile(profile);
+      showSuccessAlert('Perfil actualizado correctamente');
+    } catch (error) {
+      console.error('Error al actualizar perfil:', error);
+      alert('Error al actualizar el perfil');
+    }
+  };
+  if (loading) return <div>Cargando...</div>;
   return (
     <div className="profile-page">
       <h1 className="page-title">Mi Perfil</h1>
@@ -43,7 +66,7 @@ function Profile() {
                   <Form.Control
                     type="text"
                     name="name"
-                    value={formData.name}
+                    value={profile.name}
                     onChange={handleChange}
                     className="profile-input"
                   />
@@ -57,7 +80,7 @@ function Profile() {
                   <Form.Control
                     type="email"
                     name="email"
-                    value={formData.email}
+                    value={profile.email}
                     onChange={handleChange}
                     className="profile-input"
                   />
@@ -75,7 +98,6 @@ function Profile() {
                   <Form.Control
                     type="password"
                     name="currentPassword"
-                    value={formData.currentPassword}
                     onChange={handleChange}
                     className="profile-input"
                     placeholder="••••••••"
@@ -90,7 +112,7 @@ function Profile() {
                   <Form.Control
                     type="password"
                     name="newPassword"
-                    value={formData.newPassword}
+                    value={profile.newPassword}
                     onChange={handleChange}
                     className="profile-input"
                     placeholder="••••••••"
@@ -105,7 +127,7 @@ function Profile() {
                   <Form.Control
                     type="password"
                     name="confirmPassword"
-                    value={formData.confirmPassword}
+                    value={profile.confirmPassword}
                     onChange={handleChange}
                     className="profile-input"
                     placeholder="••••••••"
@@ -127,19 +149,12 @@ function Profile() {
               <h5 className="card-title mb-4">Estadísticas de Usuario</h5>
               <div className="user-stat">
                 <span className="stat-label">Miembro desde</span>
-                <span className="stat-value">Enero 2024</span>
+                <span className="stat-value">{new Date(profile.created_at).toLocaleDateString()}</span>
               </div>
               <div className="user-stat">
                 <span className="stat-label">Transacciones registradas</span>
-                <span className="stat-value">142</span>
-              </div>
-              <div className="user-stat">
-                <span className="stat-label">Categorías activas</span>
-                <span className="stat-value">8</span>
-              </div>
-              <div className="user-stat">
-                <span className="stat-label">Ahorro acumulado</span>
-                <span className="stat-value">$4,200</span>
+                <span className="stat-value">{profile.total_transactions || 0}</span>
+
               </div>
             </Card.Body>
           </Card>

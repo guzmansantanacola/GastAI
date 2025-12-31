@@ -1,47 +1,36 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Row, Col, Card, Badge, ProgressBar } from 'react-bootstrap';
 import { FaRobot, FaLightbulb, FaChartLine, FaExclamationTriangle } from 'react-icons/fa';
 
+import { getAIRecommendations } from '../services/aiRecommendations';
+import { transactionService } from '../services/api';
+
 function Recommendations() {
-  // TODO: Reemplazar con datos reales del backend
-  const recommendations = [
-    {
-      id: 1,
-      type: 'warning',
-      icon: <FaExclamationTriangle />,
-      title: 'Gasto Inusual Detectado',
-      description: 'Has gastado $800 más de lo habitual en "Entretenimiento" este mes.',
-      impact: 'alto',
-      savings: 800
-    },
-    {
-      id: 2,
-      type: 'tip',
-      icon: <FaLightbulb />,
-      title: 'Oportunidad de Ahorro',
-      description: 'Reduciendo 2 salidas a comer por semana, podrías ahorrar hasta $600/mes.',
-      impact: 'medio',
-      savings: 600
-    },
-    {
-      id: 3,
-      type: 'insight',
-      icon: <FaChartLine />,
-      title: 'Patrón Identificado',
-      description: 'Tus gastos en transporte aumentan un 30% los fines de semana.',
-      impact: 'bajo',
-      savings: 0
-    },
-    {
-      id: 4,
-      type: 'tip',
-      icon: <FaLightbulb />,
-      title: 'Meta Sugerida',
-      description: 'Con tu ingreso actual, podrías ahorrar $1000 mensuales sin afectar tu estilo de vida.',
-      impact: 'alto',
-      savings: 1000
+  const [recommendations, setRecommendations] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [transactions, setTransactions] = useState([]);
+
+  useEffect(() => {
+    async function fetchAIRecommendations() {
+      setLoading(true);
+      setError(null);
+      try {
+        // 1. Obtener transacciones del usuario
+        const txResult = await transactionService.getAll();
+        const txs = txResult.data || [];
+        setTransactions(txs);
+        // 2. Pasar transacciones a la IA
+        const aiRecs = await getAIRecommendations(txs);
+        setRecommendations(aiRecs);
+      } catch (err) {
+        setError('No se pudieron obtener recomendaciones de IA.');
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+    fetchAIRecommendations();
+  }, []);
 
   const patterns = [
     { category: 'Alimentación', trend: 'estable', change: '+2%' },
@@ -68,6 +57,27 @@ function Recommendations() {
     return colors[trend] || 'secondary';
   };
 
+  const iconMap = {
+    warning: <FaExclamationTriangle />,
+    tip: <FaLightbulb />,
+    insight: <FaChartLine />
+  };
+
+  // Calcular potencial de ahorro y porcentaje
+  const ahorroPotencial = recommendations.reduce((acc, rec) => acc + (rec.savings || 0), 0);
+  // Sumar solo gastos (amount < 0 o type === 'expense') del mes actual
+  const now = new Date();
+  const gastosMes = transactions.filter(tx => {
+    const txDate = new Date(tx.date);
+    return (
+      (tx.type === 'expense' || tx.amount < 0) &&
+      txDate.getMonth() === now.getMonth() &&
+      txDate.getFullYear() === now.getFullYear()
+    );
+  });
+  const totalGastosMes = gastosMes.reduce((acc, tx) => acc + Math.abs(tx.amount), 0);
+  const porcentajeAhorro = totalGastosMes > 0 ? Math.round((ahorroPotencial / totalGastosMes) * 100) : 0;
+
   return (
     <div className="recommendations-page">
       <div className="page-header-ai">
@@ -84,16 +94,16 @@ function Recommendations() {
           <Row className="align-items-center">
             <Col md={8}>
               <h4 className="savings-title">Potencial de Ahorro Mensual</h4>
-              <h2 className="savings-amount">$1,400</h2>
+              <h2 className="savings-amount">${ahorroPotencial.toLocaleString()}</h2>
               <p className="savings-description">
-                Siguiendo estas recomendaciones podrías ahorrar hasta un 28% de tus gastos mensuales
+                Siguiendo estas recomendaciones podrías ahorrar hasta un {porcentajeAhorro}% de tus gastos mensuales
               </p>
             </Col>
             <Col md={4}>
               <div className="savings-progress">
                 <ProgressBar 
-                  now={28} 
-                  label="28%"
+                  now={porcentajeAhorro} 
+                  label={`${porcentajeAhorro}%`}
                   variant="success"
                   className="custom-progress"
                 />
@@ -105,12 +115,18 @@ function Recommendations() {
 
       {/* Recommendations Cards */}
       <Row className="mb-4">
-        {recommendations.map(rec => (
+        {loading && (
+          <Col><div>Cargando recomendaciones de IA...</div></Col>
+        )}
+        {error && (
+          <Col><div className="text-danger">{error}</div></Col>
+        )}
+        {!loading && !error && recommendations.map(rec => (
           <Col lg={6} key={rec.id} className="mb-3">
             <Card className={`recommendation-card ${rec.type}`}>
               <Card.Body>
                 <div className="recommendation-header">
-                  <div className="recommendation-icon">{rec.icon}</div>
+                  <div className="recommendation-icon">{iconMap[rec.type] || <FaRobot />}</div>
                   <Badge bg={getImpactBadge(rec.impact)} className="impact-badge">
                     Impacto {rec.impact}
                   </Badge>
@@ -127,26 +143,6 @@ function Recommendations() {
           </Col>
         ))}
       </Row>
-
-      {/* Spending Patterns */}
-      <Card className="patterns-card">
-        <Card.Body>
-          <h5 className="card-title mb-4">Patrones de Gasto Detectados</h5>
-          <Row>
-            {patterns.map((pattern, index) => (
-              <Col md={6} lg={3} key={index} className="mb-3">
-                <div className="pattern-item">
-                  <h6 className="pattern-category">{pattern.category}</h6>
-                  <Badge bg={getTrendColor(pattern.trend)} className="trend-badge">
-                    {pattern.trend}
-                  </Badge>
-                  <p className="pattern-change">{pattern.change}</p>
-                </div>
-              </Col>
-            ))}
-          </Row>
-        </Card.Body>
-      </Card>
     </div>
   );
 }

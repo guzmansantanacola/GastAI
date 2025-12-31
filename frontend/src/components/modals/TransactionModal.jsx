@@ -8,7 +8,8 @@ function TransactionModal({ show, onHide, onSave, transaction, categories }) {
     amount: '',
     description: '',
     date: new Date().toISOString().split('T')[0],
-    category_id: ''
+    category_id: '',
+    is_monthly: false
   });
   const [loading, setLoading] = useState(false);
 
@@ -20,7 +21,8 @@ function TransactionModal({ show, onHide, onSave, transaction, categories }) {
         amount: transaction.amount,
         description: transaction.description || '',
         date: transaction.date,
-        category_id: transaction.category_id
+        category_id: transaction.category_id,
+        is_monthly: transaction.is_monthly || false
       });
     } else {
       // Nueva transacción
@@ -29,7 +31,8 @@ function TransactionModal({ show, onHide, onSave, transaction, categories }) {
         amount: '',
         description: '',
         date: new Date().toISOString().split('T')[0],
-        category_id: ''
+        category_id: '',
+        is_monthly: false
       });
     }
   }, [transaction, show]);
@@ -170,6 +173,21 @@ function TransactionModal({ show, onHide, onSave, transaction, categories }) {
               rows={3}
               className="input-custom"
             />
+          </Form.Group>
+
+          {/* Transacción Mensual */}
+          <Form.Group className="mb-3">
+            <Form.Check
+              type="switch"
+              id="is-monthly-switch"
+              name="is_monthly"
+              label="¿Es una transacción mensual recurrente?"
+              checked={formData.is_monthly}
+              onChange={(e) => setFormData(prev => ({ ...prev, is_monthly: e.target.checked }))}
+            />
+            <Form.Text className="text-muted">
+              Las transacciones mensuales se cargarán automáticamente cada mes.
+            </Form.Text>
           </Form.Group>
         </Modal.Body>
 

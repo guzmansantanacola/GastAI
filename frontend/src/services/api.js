@@ -47,24 +47,24 @@ export const authService = {
       password: userData.password,
       password_confirmation: userData.confirmPassword,
     });
-    
+
     if (response.data.token) {
       localStorage.setItem('auth_token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
-    
+
     return response.data;
   },
 
   // Login
   login: async (credentials) => {
     const response = await apiClient.post('/login', credentials);
-    
+
     if (response.data.token) {
       localStorage.setItem('auth_token', response.data.token);
       localStorage.setItem('user', JSON.stringify(response.data.user));
     }
-    
+
     return response.data;
   },
 
@@ -104,4 +104,57 @@ export const categoryService = {
     return response.data;
   }
 }
+
+export const transactionService = {
+  getAll: async () => {
+    const response = await apiClient.get('/transactions');
+    return response.data;
+  },
+
+  getById: async (id) => {
+    const response = await apiClient.get(`/transactions/${id}`);
+    return response.data;
+  },
+
+  create: async (transactionData) => {
+    const response = await apiClient.post('/transactions', transactionData);
+    return response.data;
+  },
+
+  update: async (id, transactionData) => {
+    const response = await apiClient.put(`/transactions/${id}`, transactionData);
+    return response.data;
+  },
+
+  delete: async (id) => {
+    const response = await apiClient.delete(`/transactions/${id}`);
+    return response.data;
+  }
+};
+
+export const dashboardService = {
+  getStats: async () => {
+    const response = await apiClient.get('/dashboard/stats');
+    return response.data;
+  }
+};
+
+export const profileService = {
+  getProfile: async () => {
+    const response = await apiClient.get('/profile');
+    return response.data;
+  },
+
+  updateProfile: async (profileData) => {
+    const response = await apiClient.put('/profile', profileData);
+    return response.data;
+  }
+};
+export const statService = {
+  getStats: async() => {
+    const response = await apiClient.get('/stats');
+    return response.data;
+  }
+};
+
 export default apiClient;

@@ -1,30 +1,10 @@
-import api from './api';
+// Este archivo es redundante - usar transactionService de api.js
+import { transactionService } from './api';
 
-// Obtener todas las transacciones
-export const getTransactions = async () => {
-  const response = await api.get('/transactions');
-  return response.data;
-};
+export const getTransactions = transactionService.getAll;
+export const getTransaction = transactionService.getById;
+export const createTransaction = transactionService.create;
+export const updateTransaction = transactionService.update;
+export const deleteTransaction = transactionService.delete;
 
-// Obtener una transacción por ID
-export const getTransaction = async (id) => {
-  const response = await api.get(`/transactions/${id}`);
-  return response.data;
-};
-
-// Crear nueva transacción
-export const createTransaction = async (data) => {
-  const response = await api.post('/transactions', data);
-  return response.data;
-};
-
-// Actualizar transacción
-export const updateTransaction = async (id, data) => {
-  const response = await api.put(`/transactions/${id}`, data);
-  return response.data;
-};
-
-// Eliminar transacción
-export const deleteTransaction = async (id) => {
-  await api.delete(`/transactions/${id}`);
-};
+export default transactionService;

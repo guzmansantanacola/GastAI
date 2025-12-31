@@ -4,33 +4,35 @@ import { Row, Col, Card, Table, Button, Badge, Form, InputGroup } from 'react-bo
 import { FaPlus, FaSearch, FaEdit, FaTrash } from 'react-icons/fa';
 import TransactionModal from '../components/modals/TransactionModal';
 import DeleteConfirmModal from '../components/modals/DeleteConfirmModal';
-import { categoryService } from '../services/api';
+
+import { categoryService, transactionService } from '../services/api';
+import { showSuccessAlert } from '../components/common/successAlert';
 
 
 function Transactions() {
-  // TODO: Reemplazar con datos reales del backend
-  const [transactions, setTransactions] = useState([
-    { id: 1, date: '2024-12-27', description: 'Supermercado', category: 'Alimentación', category_id: 1, amount: 1250, type: 'expense' },
-    { id: 2, date: '2024-12-26', description: 'Salario', category: 'Ingreso', category_id: 9, amount: 5000, type: 'income' },
-    { id: 3, date: '2024-12-25', description: 'Netflix', category: 'Entretenimiento', category_id: 3, amount: 450, type: 'expense' },
-    { id: 4, date: '2024-12-24', description: 'Uber', category: 'Transporte', category_id: 2, amount: 320, type: 'expense' },
-    { id: 5, date: '2024-12-23', description: 'Farmacia', category: 'Salud', category_id: 4, amount: 890, type: 'expense' }
-  ]);
-
+  const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
+  const [loading, setLoading] = useState(true);
   
-  // Obtener categorías del backend
+  // Obtener categorías y transacciones del backend
   useEffect(() => {
-    const fetchCategories = async () => {
+    const fetchData = async () => {
       try {
-        const result = await categoryService.getAll();
-        setCategories(result.data);
+        setLoading(true);
+        const [categoriesResult, transactionsResult] = await Promise.all([
+          categoryService.getAll(),
+          transactionService.getAll()
+        ]);
+        setCategories(categoriesResult.data);
+        setTransactions(transactionsResult.data);
       } catch (error) {
-        console.error('Error al obtener categorías:', error);
+        console.error('Error al obtener datos:', error);
+      } finally {
+        setLoading(false);
       }
     };
-    fetchCategories();
+    fetchData();
   }, []);
   const [showModal, setShowModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -48,21 +50,23 @@ function Transactions() {
   };
 
   const handleSaveTransaction = async (formData) => {
-    // TODO: Guardar en backend
-    console.log('Guardando transacción:', formData);
-    
-    if (selectedTransaction) {
-      // Editar
-      setTransactions(prev => prev.map(t => 
-        t.id === selectedTransaction.id ? { ...t, ...formData } : t
-      ));
-    } else {
-      // Crear nueva
-      const newTransaction = {
-        id: Date.now(),
-        ...formData
-      };
-      setTransactions(prev => [newTransaction, ...prev]);
+    try {
+      if (selectedTransaction) {
+        // Editar transacción existente
+        const updated = await transactionService.update(selectedTransaction.id, formData);
+        setTransactions(prev => prev.map(t => 
+          t.id === selectedTransaction.id ? updated.data : t
+        ));
+        showSuccessAlert('Transacción editada correctamente');
+      } else {
+        // Crear nueva transacción
+        const newTransaction = await transactionService.create(formData);
+        setTransactions(prev => [newTransaction.data, ...prev]);
+        showSuccessAlert('Transacción creada correctamente');
+      }
+    } catch (error) {
+      console.error('Error al guardar transacción:', error);
+      throw error;
     }
   };
 
@@ -73,26 +77,18 @@ function Transactions() {
 
   const handleConfirmDelete = async () => {
     setDeleteLoading(true);
-    // TODO: Eliminar en backend
-    console.log('Eliminando transacción:', selectedTransaction.id);
-    
-    setTimeout(() => {
+    try {
+      await transactionService.delete(selectedTransaction.id);
       setTransactions(prev => prev.filter(t => t.id !== selectedTransaction.id));
-      setDeleteLoading(false);
       setShowDeleteModal(false);
       setSelectedTransaction(null);
-    }, 500);
-  };
-
-  const getCategoryBadge = (category) => {
-    const colors = {
-      'Alimentación': 'success',
-      'Ingreso': 'primary',
-      'Entretenimiento': 'warning',
-      'Transporte': 'info',
-      'Salud': 'danger'
-    };
-    return colors[category] || 'secondary';
+      showSuccessAlert('Transacción eliminada correctamente');
+    } catch (error) {
+      console.error('Error al eliminar transacción:', error);
+      alert('Error al eliminar la transacción');
+    } finally {
+      setDeleteLoading(false);
+    }
   };
 
   return (
@@ -146,7 +142,7 @@ function Transactions() {
       {/* Transactions Table */}
       <Card className="transactions-card">
         <Card.Body>
-          <Table responsive hover className="transactions-table">
+          <Table responsive hover className="transactions-table text-dark">
             <thead>
               <tr>
                 <th>Fecha</th>
@@ -157,36 +153,51 @@ function Transactions() {
               </tr>
             </thead>
             <tbody>
-              {transactions.map(transaction => (
-                <tr key={transaction.id}>
-                  <td>{transaction.date}</td>
-                  <td>{transaction.description}</td>
-                  <td>
-                    <Badge bg={getCategoryBadge(transaction.category)}>
-                      {transaction.category}
-                    </Badge>
-                  </td>
-                  <td className={transaction.type === 'income' ? 'amount-income' : 'amount-expense'}>
-                    {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
-                  </td>
-                  <td>
-                    <Button 
-                      variant="link" 
-                      className="action-btn"
-                      onClick={() => handleEditTransaction(transaction)}
-                    >
-                      <FaEdit />
-                    </Button>
-                    <Button 
-                      variant="link" 
-                      className="action-btn text-danger"
-                      onClick={() => handleDeleteClick(transaction)}
-                    >
-                      <FaTrash />
-                    </Button>
-                  </td>
+              {loading ? (
+                <tr>
+                  <td colSpan="5" className="text-center">Cargando transacciones...</td>
                 </tr>
-              ))}
+              ) : transactions.length === 0 ? (
+                <tr>
+                  <td colSpan="5" className="text-center">No hay transacciones registradas</td>
+                </tr>
+              ) : (
+                transactions.map(transaction => (
+                  <tr key={transaction.id}>
+                    <td>{new Date(transaction.date).toLocaleDateString('es')}</td>
+                    <td>
+                      {transaction.description || 'Sin descripción'}
+                      {transaction.is_monthly && (
+                        <Badge bg="info" className="ms-2">Mensual</Badge>
+                      )}
+                    </td>
+                    <td>
+                      <Badge bg style={{ backgroundColor: (transaction.category?.color) }}>
+                        {transaction.category?.icon} {transaction.category?.name}
+                      </Badge>
+                    </td>
+                    <td className={transaction.type === 'income' ? 'amount-income' : 'amount-expense'}>
+                      {transaction.type === 'income' ? '+' : '-'}${Math.abs(transaction.amount).toLocaleString()}
+                    </td>
+                    <td>
+                      <Button 
+                        variant="link" 
+                        className="action-btn"
+                        onClick={() => handleEditTransaction(transaction)}
+                      >
+                        <FaEdit />
+                      </Button>
+                      <Button 
+                        variant="link" 
+                        className="action-btn text-danger"
+                        onClick={() => handleDeleteClick(transaction)}
+                      >
+                        <FaTrash />
+                      </Button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </Table>
         </Card.Body>

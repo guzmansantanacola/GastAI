@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Form, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaUser, FaArrowLeft } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import { authService } from '../services/api';
 
 function Register() {
@@ -12,7 +13,6 @@ function Register() {
     confirmPassword: ''
   });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -25,31 +25,43 @@ function Register() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     // Validar que las contraseñas coincidan
     if (formData.password !== formData.confirmPassword) {
-      setError('Las contraseñas no coinciden');
+      toast.error('❌ Las contraseñas no coinciden', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
       setLoading(false);
       return;
     }
 
     // Validar longitud mínima de contraseña
     if (formData.password.length < 8) {
-      setError('La contraseña debe tener al menos 8 caracteres');
+      toast.error('❌ La contraseña debe tener al menos 8 caracteres', {
+        position: 'top-right',
+        autoClose: 3000,
+      });
       setLoading(false);
       return;
     }
 
     try {
       await authService.register(formData);
-      navigate('/dashboard');
+      toast.success('¡Cuenta creada exitosamente! 🎉', {
+        position: 'top-right',
+        autoClose: 2000,
+      });
+      setTimeout(() => navigate('/dashboard'), 500);
     } catch (err) {
       console.error('Error al registrar:', err);
       const errorMsg = err.response?.data?.message || 
                        err.response?.data?.errors?.email?.[0] ||
                        'Error al crear la cuenta. Intenta nuevamente.';
-      setError(errorMsg);
+      toast.error(`❌ ${errorMsg}`, {
+        position: 'top-right',
+        autoClose: 4000,
+      });
     } finally {
       setLoading(false);
     }
@@ -67,12 +79,6 @@ function Register() {
             <h1 className="login-title">GastAi</h1>
             <p className="login-subtitle">Crea tu cuenta para comenzar</p>
           </div>
-
-          {error && (
-            <Alert variant="danger" onClose={() => setError('')} dismissible>
-              {error}
-            </Alert>
-          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formName">

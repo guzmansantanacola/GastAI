@@ -6,6 +6,46 @@
   min-height: 100vh;
 }
 
+/* TOAST CUSTOMIZATION */
+.Toastify__toast {
+  font-family: 'Montserrat', system-ui, -apple-system, sans-serif;
+  background: rgba(17, 24, 39, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+.Toastify__toast--success {
+  border-color: rgba(16, 185, 129, 0.5);
+}
+
+.Toastify__toast--error {
+  border-color: rgba(239, 68, 68, 0.5);
+}
+
+.Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #10b981;
+}
+
+.Toastify__toast--error .Toastify__toast-icon svg {
+  fill: #ef4444;
+}
+
+.Toastify__progress-bar {
+  background: linear-gradient(90deg, #06b6d4, #3b82f6, #9333ea) !important;
+}
+
+.Toastify__close-button {
+  color: rgba(255, 255, 255, 0.7);
+  opacity: 0.7;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1;
+}
+/* END TOAST CUSTOMIZATION */
+
 section {
   position: relative;
 }
@@ -932,6 +972,8 @@ button:disabled,
 .transactions-table {
   margin: 0;
   color: rgba(255, 255, 255, 0.9);
+    --bs-table-bg: none !important;
+  --bs-table-accent-bg: none !important;
 }
 
 .transactions-table thead th {

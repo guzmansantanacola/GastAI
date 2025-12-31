@@ -1,29 +1,36 @@
 import React, { useState } from 'react';
-import { Container, Form, Button, Alert } from 'react-bootstrap';
+import { Container, Form, Button } from 'react-bootstrap';
 import { Link, useNavigate } from 'react-router-dom';
 import { FaEnvelope, FaLock, FaArrowLeft } from 'react-icons/fa';
+import { toast } from 'react-toastify';
 import { authService } from '../services/api';
 
 function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setError('');
 
     try {
       await authService.login({ email, password });
-      navigate('/dashboard');
+      toast.success('¡Bienvenido! 🎉', {
+        position: 'top-right',
+        autoClose: 2000,
+      });
+      setTimeout(() => navigate('/dashboard'), 500);
     } catch (err) {
       console.error('Error al iniciar sesión:', err);
-      setError(
+      toast.error(
         err.response?.data?.message || 
-        'Error al iniciar sesión. Verifica tus credenciales.'
+        '❌ Error al iniciar sesión. Verifica tus credenciales.',
+        {
+          position: 'top-right',
+          autoClose: 4000,
+        }
       );
     } finally {
       setLoading(false);
@@ -42,12 +49,6 @@ function Login() {
             <h1 className="login-title">GastAi</h1>
             <p className="login-subtitle">Inicia sesión para continuar</p>
           </div>
-
-          {error && (
-            <Alert variant="danger" onClose={() => setError('')} dismissible>
-              {error}
-            </Alert>
-          )}
 
           <Form onSubmit={handleSubmit}>
             <Form.Group className="mb-3" controlId="formEmail">
