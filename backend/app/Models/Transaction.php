@@ -14,11 +14,13 @@ class Transaction extends Model
         'date',
         'category_id',
         'user_id',
+        'is_monthly',
     ];
 
     protected $casts = [
         'amount' => 'decimal:2',
         'date' => 'date',
+        'is_monthly' => 'boolean',
     ];
 
     public function user(): BelongsTo
